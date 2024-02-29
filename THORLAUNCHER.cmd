@@ -1,5 +1,5 @@
 @ECHO OFF
-SET "repo=/Alex313031/Thorium-Win"
+SET "repo=api.github.com/repos/Alex313031/Thorium-Win"
 SET "user_dir=USER_DATA"
 SET "flags=--no-default-browser-check --disable-logging --disable-breakpad"
 
@@ -20,11 +20,8 @@ IF NOT EXIST BIN\ (
    CALL :getweb
    CALL :download
    CALL :unzip
+   CALL :getlocal
    CALL :run
-)
-IF EXIST new.zip (
-   ECHO Applying the UPDATE ...
-   GOTO resume
 )
 IF NOT EXIST "BIN\thor_ver" (
    ECHO error: Current Version NOT A THORIUM RELEASE!
@@ -32,14 +29,21 @@ IF NOT EXIST "BIN\thor_ver" (
    PAUSE
    EXIT
 )
+IF EXIST new.zip (
+   ECHO Applying the UPDATE ...
+   GOTO resume
+)
 SET "rel=none"
 SET /P rel=<"BIN\thor_ver"
 SET "rel=%rel:*-=%"
 IF %rel%==Win SET "rel=AVX" 
-ECHO: Release: %rel%
-CALL :getlocal
-ECHO: Current: %local%
+ECHO: CHECK FOR UPDATE ...
 CALL :getweb
+IF NOT DEFINED tag GOTO run
+IF NOT DEFINED url GOTO run
+CALL :getlocal
+ECHO: Release: %rel%
+ECHO: Current: %local%
 ECHO: Latest : %tag%
 IF %local%==%tag% (
    ECHO: NO NEW VERSION FOUND
@@ -51,14 +55,15 @@ CALL :download
 ECHO Backup BIN TO _BIN ...
 2>NUL (MOVE /Y BIN _BIN >NUL) || (
    ECHO THORIUM PORTABLE IS CURRENTLY RUNNING [BIN folder is being used]
-   ECHO Will apply the UPDATE on the next LAUNCH!
+   ECHO UPDATE will be applied on next LAUNCH!
    PING -n 5 127.0.0.1>NUL
    EXIT
 )
 CALL :unzip
+CALL :getlocal
 :run
 CALL :cleanup
-ECHO Starting THORIUM PORTABLE ...
+ECHO Launching THORIUM PORTABLE ...
 START "" "%~dp0BIN\Thorium" --user-data-dir="%~dp0%user_dir%" %flags%
 :norun
 PING -n 3 127.0.0.1>NUL
@@ -73,40 +78,30 @@ for /f "delims=" %%G in (
 exit /b
 
 :getweb
-type nul>latest || (
-   echo error: NO WRITE ACCESS
-   pause
-   exit
-)
-CURL -s https://api.github.com/repos%repo%/releases/latest>latest
-:: VERSION TAG
 set "tag="
-for /f "delims=" %%G in (
-   'type latest ^|find /i "tag_name"'
-)do set "tag=%%G"
-if not defined tag (
-   echo error: NOTHING FOUND! REPO CHANGED?
-   pause
-   exit
-)
-set "tag=%tag:*"M=%"
-set "tag=%tag:",=%"
-:: DOWNLOAD URL
 set "url="
+set "_dl=CURL --connect-timeout 7 -s https://%repo%/releases/latest"
 for /f "delims=" %%G in (
-   'type latest ^|find "browser_download_url" ^|find "_%rel%_" ^|find ".zip"'
+   '%_dl% ^|find "browser_download_url" ^|find ".zip" ^|find "_%rel%_"'
 )do set "url=%%G"
-if not defined url (
-   echo error: DOWNLOAD URL NOT FOUND. REPO CHANGED?
-   pause
-   exit
-)
+if defined url (
+   call :url_tag
+) else echo error: DOWNLOAD URL NOT FOUND. REPO CHANGED? 
+exit /b
+:url_tag
 set "url=%url:*"https="https%"
-del latest
+setlocal enabledelayedexpansion
+set "_t=!url:*_%rel%_=!"
+endlocal& set tag=%_t%
+set "tag=%tag:.zip"=%"
 exit /b
 
 :download
-echo Downloading latest THORIUM PORTABLE ...
+if not defined url (
+   pause
+   exit
+)
+echo Downloading latest THORIUM PORTABLE ... %rel%
 CURL -L -o new.zip %url% || (
    echo error: DOWNLOAD FAILED
    pause
@@ -143,7 +138,7 @@ rem call :cc "%~dp0%a%\IndexedDB\"
 rem call :cc "%~dp0%a%\Service Worker\"
 rem call :cc "%~dp0%a%\File System\"
 :: GET RID OF thorium_shell.exe
-rem set shell="%~dp0bin\%local%\thorium_shell.exe"
+set shell="%~dp0bin\%local%\thorium_shell.exe"
 rem if exist %shell% (del %shell% && echo deleted %shell%)
 exit /b
 :cc
@@ -152,17 +147,17 @@ exit /b
 
 :brandnew
 setlocal enabledelayedexpansion
-choice /m "... THORIUM PORTABLE WILL BE INSTALLED. CONTINUE?"
+choice /m "... THORIUM PORTABLE WILL BE DOWNLOADED AND LAUNCHED. CONTINUE?"
 if !ERRORLEVEL! EQU 2 exit
 cls
 set "a1=AVX2"
 set "a2=AVX"
 set "a3=SSE3"
 echo:########   RELEASE TYPES   ########
-echo: 1: %a1%    Most Intel/AMD CPUs since 2017
-echo: 2: %a2%     Intel/AMD CPUs since 2012
+echo: 1: %a1%    For most Intel/AMD CPUs since 2017.
+echo: 2: %a2%     For Intel/AMD CPUs since 2012.
 echo: 3: %a3%    For CPUs that lack AVX. Generally CPUs older than 2012.
 echo:
-choice /C 123 /N /M ".. PICK ONE [1,2,3]: "
+choice /C 123 /N /M ".. CHOOSE ONE [1,2,3]: "
 set "n=!a%ERRORLEVEL%!"
 endlocal& set %~1=%n%
