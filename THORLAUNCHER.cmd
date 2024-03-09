@@ -33,14 +33,11 @@ IF EXIST new.zip (
    ECHO Applying the UPDATE ...
    GOTO resume
 )
-SET "rel=none"
-SET /P rel=<"BIN\thor_ver"
-SET "rel=%rel:*-=%"
-IF %rel%==Win SET "rel=AVX" 
+SET "rel="
+FOR /f "skip=1" %%G IN (BIN\thor_ver) DO IF NOT DEFINED rel SET "rel=%%G"
 ECHO: CHECK FOR UPDATE ...
 CALL :getweb
 IF NOT DEFINED tag GOTO run
-IF NOT DEFINED url GOTO run
 CALL :getlocal
 ECHO: Release: %rel%
 ECHO: Current: %local%
@@ -52,13 +49,7 @@ IF %local%==%tag% (
 ECHO: NEW VERSION FOUND!
 CALL :download
 :resume
-ECHO Backup BIN TO _BIN ...
-2>NUL (MOVE /Y BIN _BIN >NUL) || (
-   ECHO THORIUM PORTABLE IS CURRENTLY RUNNING [BIN folder is being used]
-   ECHO UPDATE will be applied on next LAUNCH!
-   PING -n 5 127.0.0.1>NUL
-   EXIT
-)
+CALL :backup
 CALL :unzip
 CALL :getlocal
 :run
@@ -108,6 +99,16 @@ CURL -L -o new.zip %url% || (
    exit
 )
 cls
+exit /b
+
+:backup
+echo Backup BIN TO _BIN ...
+2>nul (move /Y BIN _BIN >nul) || (
+   echo THORIUM PORTABLE IS CURRENTLY RUNNING [BIN folder is being used]
+   echo UPDATE will be applied on next LAUNCH!
+   ping -n 5 127.0.0.1>nul
+   exit
+)
 exit /b
 
 :unzip
