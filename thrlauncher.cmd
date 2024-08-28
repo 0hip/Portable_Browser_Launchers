@@ -37,10 +37,10 @@ IF EXIST new.zip (
 )
 SET "rel="
 FOR /f "skip=1" %%G IN (BIN\thor_ver) DO IF NOT DEFINED rel SET "rel=%%G"
-ECHO: CHECK FOR UPDATE ...
 CALL :getweb
 IF NOT DEFINED tag GOTO run
 CALL :getlocal
+ECHO: CHECK FOR UPDATE ...
 ECHO: Release: %rel%
 ECHO: Current: %local%
 ECHO: Latest : %tag%
@@ -73,6 +73,7 @@ exit /b
 :getweb
 set "tag="
 set "url="
+ping -n 1 github.com>nul || exit /b
 set "_dl=CURL --connect-timeout 7 -s https://%repo%/releases/latest"
 for /f "delims=" %%G in (
    '%_dl% ^|find "browser_download_url" ^|find ".zip" ^|find "_%rel%_"'
