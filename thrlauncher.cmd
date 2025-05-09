@@ -22,7 +22,7 @@ IF NOT EXIST BIN\ (
    CALL :brandnew
    CALL :unzip
    CALL :getlocal
-   CALL :run
+   GOTO run
 )
 IF NOT EXIST "BIN\thor_ver" (
    ECHO error: Current Version NOT A THORIUM RELEASE!
