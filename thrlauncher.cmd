@@ -1,21 +1,22 @@
 @ECHO OFF
 SET "repo=api.github.com/repos/Alex313031/Thorium-Win"
+SET "_dl=CURL --connect-timeout 7 -s https://%repo%/releases/latest"
+:: User data directory
 SET "user_dir=USER_DATA"
-::https://peter.sh/experiments/chromium-command-line-switches/
-::--disable-features=PrintCompositorLPAC [solves "print preview failed" issue]
-SET "flags=--no-default-browser-check --disable-logging --disable-breakpad --disable-features=PrintCompositorLPAC"
+:: https://peter.sh/experiments/chromium-command-line-switches/
+SET "flags=--no-default-browser-check --disable-logging --disable-breakpad"
+:: Solving "print preview failed" issue
+SET "flags=%flags% --disable-features=PrintCompositorLPAC"
 
 MODE CON: COLS=90 LINES=12 & COLOR 9F
 TITLE THORIUM PORTABLE LAUNCHER
 CD /D "%~dp0"
 
 SET "lnk=%1"
-SET test="%~dp0%user_dir%\Default\Cache\Cache_Data\index"
+SET test="%~dp0%user_dir%\lockfile"
 IF EXIST %test% (
-   2>NUL (SET /P a=<%test%) || (
-      IF NOT DEFINED lnk SET "lnk=about:blank"
-      GOTO newtab
-   )
+   IF NOT DEFINED lnk SET "lnk=about:blank"
+   GOTO newtab
 )
 IF NOT EXIST BIN\ (
    ECHO FIRST TIME RUNNING THORIUM PORTABLE LAUNCHER ...
@@ -73,7 +74,6 @@ set "tag="
 set "url="
 ping -n 1 github.com>nul || exit /b
 echo: %rel% RELEASE : SEARCH FOR LATEST VERSION
-set "_dl=CURL --connect-timeout 7 -s https://%repo%/releases/latest"
 for /f "delims=" %%G in (
    '%_dl% ^|find "browser_download_url" ^|find ".zip" ^|find "_%rel%_"'
 )do set "url=%%G"
@@ -135,14 +135,14 @@ exit /b
 set "a=%user_dir%\Default"
 set shell="%~dp0bin\%local%\thorium_shell.exe"
 :: CACHE CLEANING
-rem call :cc "%~dp0%a%\Cache\"
-rem call :cc "%~dp0%a%\Code Cache\"
+call :cc "%~dp0%a%\Cache\"
+call :cc "%~dp0%a%\Code Cache\"
 :: FURTHER CLEANING
-rem call :cc "%~dp0%a%\Service Worker\"
-rem call :cc "%~dp0%a%\File System\"
+call :cc "%~dp0%a%\Service Worker\"
+call :cc "%~dp0%a%\File System\"
 rem call :cc "%~dp0%a%\IndexedDB\"
 :: GET RID OF thorium_shell.exe
-rem if exist %shell% (del %shell% && echo deleted %shell%)
+if exist %shell% (del %shell% && echo deleted %shell%)
 exit /b
 :cc
 set "_="
@@ -159,30 +159,34 @@ ping -n 1 github.com>nul || ( echo NO GITHUB RESPONSE & pause & exit )
 echo ##########   PORTABLE RELEASE(S)   ##########
 set "x=0"
 set "a="
-set "_dl=CURL --connect-timeout 7 -s https://%repo%/releases/latest"
 for /f "delims=" %%G in ('%_dl% ^|find "browser_download_url" ^|find ".zip"') do (
-	set /a "x+=1"
-	set "_u=%%G"
-	set "u!x!=!_u:*"https="https!"
-	set "_u=!_u:*/download/=!"
-	set "_u=!_u:*/=!"
-	set "_u=!_u:"=!"
-	echo: !x!: !_u!
-	set "a=!a!!x!"
+   set /a "x+=1"
+   set "_u=%%G"
+   set "u!x!=!_u:*"https="https!"
+   set "_u=!_u:*/download/=!"
+   set "_u=!_u:*/=!"
+   set "_u=!_u:"=!"
+   echo: !x!: !_u!
+   set "a=!a!!x!"
 )
 set /a "x+=1"
 set "a=!a!!x!"
-echo: !x!: . . . I Have a URL (I know what I'm doing)
+echo: !x!: . . . I have URL (I know what I'm doing)
 echo:
-choice /C !a! /N /M ".. CHOOSE ONE: "
+choice /c !a! /n /m ".. CHOOSE ONE: "
 set "_x=%ERRORLEVEL%"
 if !_x! EQU !x! (
-	set /p "u!x!=Paste URL here: " || exit /b
-	set "_u=!u%x%!"
-	set "_u=!_u:"=!"
-	if not "!_u:~-4!"==".zip" ( echo Invalid URL & pause & exit )
+   set /p "u!_x!=Paste URL here: " || exit /b
+   set "_u=!u%_x%!"
+   set "_u=!_u:"=!"
+   if not "!_u:~-4!"==".zip" ( echo Invalid URL & pause & exit )
 )
-echo Downloading: !u%_x%!
+cls
+set "_u=!u%_x%!"
+set "_u=!_u:*/download/=!"
+set "_u=!_u:*/="!"
+echo: DOWNLOADING: !_u!
+echo:
 CURL -L -o new.zip !u%_x%!
 endlocal
 cls
