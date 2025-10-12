@@ -159,7 +159,7 @@ ping -n 1 github.com>nul || ( echo NO GITHUB RESPONSE & pause & exit )
 echo ##########   PORTABLE RELEASE(S)   ##########
 set "x=0"
 set "a="
-for /f "delims=" %%G in ('%_dl% ^|find "browser_download_url" ^|find ".zip"') do (
+for /f "delims=" %%G in ('%_dl% ^|find "browser_download_url" ^|find ".zip" ^|find /v "policy"') do (
    set /a "x+=1"
    set "_u=%%G"
    set "u!x!=!_u:*"https="https!"
@@ -190,3 +190,4 @@ echo:
 CURL -L -o new.zip !u%_x%!
 endlocal
 cls
+
