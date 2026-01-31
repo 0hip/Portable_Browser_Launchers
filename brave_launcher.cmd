@@ -128,15 +128,15 @@ md BIN
 tar -xf new.zip -C BIN || (
    echo error: UNZIP failed. Corrupted ZIP file ? ... Cleaning up ...
    del new.zip
-   if exist BIN/ rd /s /q BIN
-   if exist _BIN/ (
+   if exist BIN\ rd /s /q BIN
+   if exist _BIN\ (
       echo Restoring backup ...
       move /y _BIN BIN
       exit /b
    )
    exit
 )
-if exist _BIN/ rd /s /q _BIN
+if exist _BIN\ rd /s /q _BIN
 del new.zip
 echo ... SUCCESS!
 exit /b
@@ -159,5 +159,6 @@ exit /b
 
 :brandnew
 choice /m "... %app% PORTABLE WILL BE DOWNLOADED AND LAUNCHED. CONTINUE?"
-if !ERRORLEVEL! EQU 2 exit
+if %ERRORLEVEL% EQU 2 exit
 cls
+
